@@ -229,6 +229,27 @@ test('selection lifecycle ignores vessels, accepts installations, and clears wit
     }));
     assert.equal(getActiveTrackedReadoutId(), 'alpr:42');
     assert.equal(recorder.calls.filter(({ op }) => op === 'set').at(-1).entries[0].title, 'FLOCK SAFETY ALPR');
+    // Public Incidents are static context too: selecting an incident publishes its card.
+    const incident = {
+      gevTrackedId: 'public-incident:austin-fire:test-incident',
+      gevDisplayPosition: () => ({ x: 7, y: 8, z: 9 }),
+      gevLabelModel: {
+        title: 'STRUCTURE FIRE',
+        details: ['100 CONGRESS AVE', 'STATUS · ACTIVE', 'AUSTIN FIRE DEPARTMENT'],
+        accent: '#ff4b32',
+      },
+    };
+    fakeWindow.dispatchEvent(new CustomEvent('gev:entity-selected', {
+      detail: { layerId: 'public-incidents', entity: incident },
+    }));
+    assert.equal(
+      getActiveTrackedReadoutId(),
+      'public-incident:austin-fire:test-incident',
+    );
+    assert.equal(
+      recorder.calls.filter(({ op }) => op === 'set').at(-1).entries[0].title,
+      'STRUCTURE FIRE',
+    );
 
     fakeWindow.dispatchEvent(new CustomEvent('gev:entity-selected', {
       detail: { layerId: 'ais-live-vessels', entity: installation },
@@ -304,3 +325,4 @@ test('civilian and military trail heads use the lower-centre model anchor and we
       `${name} keeps diffuse texture contribution weak through code-side MIX`);
   }
 });
+
