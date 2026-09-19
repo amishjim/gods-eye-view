@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   createAustinFireIncidentSource,
   createSeattleFireIncidentSource,
+  createPhoenixFireIncidentSource,
   createCombinedPublicIncidentSource,
 } from './source.js';
 
@@ -404,5 +405,164 @@ test('combined source requires valid provider sources', () => {
   assert.throws(
     () => createCombinedPublicIncidentSource([{}]),
     /requires snapshot sources/,
+  );
+});
+
+test('adapts Phoenix Fire GeoJSON features into Public Incident records', async () => {
+  let requestedUrl;
+  let requestedOptions;
+
+  const source = createPhoenixFireIncidentSource({
+    fetchImpl: async (url, options) => {
+      requestedUrl = url;
+      requestedOptions = options;
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                properties: {
+                  Incident: 'PHX-123',
+                  Nature: 'HOUSEF',
+                  NatureDesc: 'HOUSE FIRE',
+                  GenLocInfo: '100 W WASHINGTON ST',
+                  Date: 1789763400000,
+                },
+                geometry: {
+                  type: 'Point',
+                  coordinates: [-112.074, 33.4484],
+                },
+              },
+            ],
+          };
+        },
+      };
+    },
+  });
+
+  const controller = new AbortController();
+  const snapshot = await source.getSnapshot({
+    signal: controller.signal,
+  });
+
+  assert.match(
+    requestedUrl,
+    /maps\.phoenix\.gov\/phxfire\/rest\/services\/Active_Incidents__Public/,
+  );
+  assert.match(requestedUrl, /f=geojson/);
+  assert.equal(requestedOptions.signal, controller.signal);
+
+  assert.equal(snapshot.length, 1);
+
+  const incident = snapshot[0];
+
+  assert.equal(incident.stableId, 'phoenix-fire:PHX-123');
+  assert.equal(incident.sourceId, 'PHX-123');
+  assert.equal(incident.provider, 'phoenix-fire');
+  assert.equal(incident.type, 'HOUSEF');
+  assert.equal(incident.title, 'HOUSE FIRE');
+  assert.equal(incident.description, '100 W WASHINGTON ST');
+  assert.equal(incident.lat, 33.4484);
+  assert.equal(incident.lon, -112.074);
+  assert.equal(incident.status, '');
+  assert.equal(incident.source, 'Phoenix Fire Department');
+  assert.equal(incident.time, 1789763400000);
+});
+
+test('invalid Phoenix GeoJSON features are filtered by normalization', async () => {
+  const source = createPhoenixFireIncidentSource({
+    fetchImpl: async () => ({
+      ok: true,
+      async json() {
+        return {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: {
+                Incident: 'GOOD',
+                Nature: 'MEDICAL',
+                NatureDesc: 'MEDICAL RESPONSE',
+                GenLocInfo: 'GOOD LOCATION',
+                Date: 1789763400000,
+              },
+              geometry: {
+                type: 'Point',
+                coordinates: [-112.1, 33.5],
+              },
+            },
+            {
+              type: 'Feature',
+              properties: {
+                Incident: 'BAD-GEOMETRY',
+                Nature: 'FIRE',
+                NatureDesc: 'FIRE',
+              },
+              geometry: null,
+            },
+            {
+              type: 'Feature',
+              properties: {
+                Nature: 'FIRE',
+                NatureDesc: 'MISSING ID',
+              },
+              geometry: {
+                type: 'Point',
+                coordinates: [-112.1, 33.5],
+              },
+            },
+          ],
+        };
+      },
+    }),
+  });
+
+  const snapshot = await source.getSnapshot();
+
+  assert.equal(snapshot.length, 1);
+  assert.equal(snapshot[0].sourceId, 'GOOD');
+});
+
+test('throws a useful error for a Phoenix HTTP failure', async () => {
+  const source = createPhoenixFireIncidentSource({
+    fetchImpl: async () => ({
+      ok: false,
+      status: 503,
+    }),
+  });
+
+  await assert.rejects(
+    () => source.getSnapshot(),
+    /Phoenix Fire HTTP 503/,
+  );
+});
+
+test('rejects a malformed Phoenix GeoJSON snapshot', async () => {
+  const source = createPhoenixFireIncidentSource({
+    fetchImpl: async () => ({
+      ok: true,
+      async json() {
+        return {
+          type: 'FeatureCollection',
+          notFeatures: [],
+        };
+      },
+    }),
+  });
+
+  await assert.rejects(
+    () => source.getSnapshot(),
+    /Phoenix Fire returned an invalid snapshot/,
+  );
+});
+
+test('Phoenix source requires a fetch implementation', () => {
+  assert.throws(
+    () => createPhoenixFireIncidentSource({ fetchImpl: null }),
+    /Phoenix Fire source requires fetch/,
   );
 });

@@ -11,10 +11,17 @@ test('public incident provider registry has unique valid providers', () => {
   for (const provider of PUBLIC_INCIDENT_PROVIDERS) {
     assert.equal(typeof provider.id, 'string');
     assert.ok(provider.id.length > 0);
-    assert.equal(ids.has(provider.id), false, `duplicate provider id: ${provider.id}`);
+    assert.equal(
+      ids.has(provider.id),
+      false,
+      `duplicate provider id: ${provider.id}`,
+    );
     ids.add(provider.id);
 
-    assert.equal(provider.platform, 'socrata');
+    assert.ok(
+      ['socrata', 'arcgis'].includes(provider.platform),
+      `${provider.id} has invalid platform`,
+    );
 
     assert.equal(typeof provider.cadenceMinutes, 'number');
     assert.ok(
@@ -27,6 +34,7 @@ test('public incident provider registry has unique valid providers', () => {
       ['live', 'recent', 'historical'].includes(provider.freshnessClass),
       `${provider.id} has invalid freshness class`,
     );
+
     assert.equal(typeof provider.agency, 'string');
     assert.ok(provider.agency.length > 0);
 
@@ -46,14 +54,36 @@ test('public incident provider registry has unique valid providers', () => {
       'type',
       'title',
       'description',
-      'lat',
-      'lon',
       'time',
     ]) {
       assert.equal(
         typeof provider.fields[fieldName],
         'string',
         `${provider.id} missing field mapping: ${fieldName}`,
+      );
+    }
+
+    if (provider.platform === 'socrata') {
+      assert.equal(
+        typeof provider.fields.lat,
+        'string',
+        `${provider.id} missing latitude field mapping`,
+      );
+      assert.equal(
+        typeof provider.fields.lon,
+        'string',
+        `${provider.id} missing longitude field mapping`,
+      );
+    } else if (provider.platform === 'arcgis') {
+      assert.equal(
+        provider.fields.lat,
+        null,
+        `${provider.id} ArcGIS latitude mapping should be null`,
+      );
+      assert.equal(
+        provider.fields.lon,
+        null,
+        `${provider.id} ArcGIS longitude mapping should be null`,
       );
     }
 

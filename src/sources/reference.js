@@ -1,7 +1,7 @@
 import { createUsgsEarthquakeSource } from '../layers/earthquakes/source.js';
 import { createBundledCableSource } from '../layers/submarineCables/bundledSource.js';
 import {
-  createSocrataPublicIncidentSource,
+  createPublicIncidentSource,
   createCombinedPublicIncidentSource,
 } from '../layers/publicIncidents/source.js';
 import { PUBLIC_INCIDENT_PROVIDERS } from '../layers/publicIncidents/providers.js';
@@ -13,7 +13,7 @@ export function createReferenceSources() {
     cables: createBundledCableSource(),
       publicIncidents: createCombinedPublicIncidentSource(
       PUBLIC_INCIDENT_PROVIDERS.map((provider) =>
-        createSocrataPublicIncidentSource(provider.id),
+        createPublicIncidentSource(provider.id),
       ),
     ),
   };

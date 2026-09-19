@@ -45,4 +45,27 @@ export const PUBLIC_INCIDENT_PROVIDERS = Object.freeze([
       status: null,
     }),
   }),
+    Object.freeze({
+    id: 'phoenix-fire',
+    jurisdiction: 'Phoenix, Arizona, USA',
+    agency: 'Phoenix Fire Department',
+    label: 'Phoenix Fire',
+    platform: 'arcgis',
+    cadenceMinutes: 5,
+    freshnessClass: 'live',
+    endpoint:
+      'https://maps.phoenix.gov/phxfire/rest/services/Active_Incidents__Public/MapServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson',
+    sourceUrl:
+      'https://maps.phoenix.gov/phxfire/rest/services/Active_Incidents__Public/MapServer/0',
+    fields: Object.freeze({
+      sourceId: 'Incident',
+      type: 'Nature',
+      title: 'NatureDesc',
+      description: 'GenLocInfo',
+      lat: null,
+      lon: null,
+      time: 'Date',
+      status: null,
+    }),
+  }),
 ]);

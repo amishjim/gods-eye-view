@@ -92,6 +92,13 @@ function readField(row, fieldName) {
 function parseProviderTime(value, provider) {
   if (value == null || value === '') return null;
 
+  /*
+   * ArcGIS commonly returns date fields as epoch milliseconds.
+   */
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
   if (provider.timeZone) {
     return parseLocalDateTimeInZone(value, provider.timeZone);
   }
@@ -113,6 +120,40 @@ function adaptProviderIncident(row, provider) {
     lon: readField(row, fields.lon),
     time: parseProviderTime(readField(row, fields.time), provider),
     status: readField(row, fields.status),
+    source: provider.agency,
+    url: provider.sourceUrl,
+  };
+}
+
+/**
+ * Convert an ArcGIS GeoJSON feature into the common provider-record shape.
+ */
+function adaptArcGisFeature(feature, provider) {
+  const properties = feature?.properties;
+  const coordinates = feature?.geometry?.coordinates;
+
+  if (
+    !properties ||
+    feature?.geometry?.type !== 'Point' ||
+    !Array.isArray(coordinates) ||
+    coordinates.length < 2
+  ) {
+    return null;
+  }
+
+  const [lon, lat] = coordinates;
+  const { fields } = provider;
+
+  return {
+    sourceId: readField(properties, fields.sourceId),
+    provider: provider.id,
+    type: readField(properties, fields.type),
+    title: readField(properties, fields.title),
+    description: readField(properties, fields.description),
+    lat,
+    lon,
+    time: parseProviderTime(readField(properties, fields.time), provider),
+    status: readField(properties, fields.status),
     source: provider.agency,
     url: provider.sourceUrl,
   };
@@ -162,6 +203,78 @@ export function createSocrataPublicIncidentSource(
 }
 
 /**
+ * Construct an ArcGIS GeoJSON-backed Public Incidents source from a provider
+ * registry entry.
+ */
+export function createArcGisPublicIncidentSource(
+  providerId,
+  { fetchImpl = globalThis.fetch } = {},
+) {
+  const provider = getProvider(providerId);
+
+  if (provider.platform !== 'arcgis') {
+    throw new TypeError(
+      `${provider.id} is not an ArcGIS Public Incidents provider`,
+    );
+  }
+
+  if (typeof fetchImpl !== 'function') {
+    throw new TypeError(`${provider.label} source requires fetch`);
+  }
+
+  return {
+    async getSnapshot({ signal } = {}) {
+      signal?.throwIfAborted();
+
+      const response = await fetchImpl(provider.endpoint, { signal });
+
+      if (!response.ok)
+        throw new Error(`${provider.label} HTTP ${response.status}`);
+
+      const payload = await response.json();
+
+      signal?.throwIfAborted();
+
+      if (
+        !payload ||
+        payload.type !== 'FeatureCollection' ||
+        !Array.isArray(payload.features)
+      ) {
+        throw new Error(`${provider.label} returned an invalid snapshot`);
+      }
+
+      return normalizePublicIncidentSnapshot(
+        payload.features
+          .map((feature) => adaptArcGisFeature(feature, provider))
+          .filter(Boolean),
+      );
+    },
+  };
+}
+
+/**
+ * Construct the correct source implementation for any registered provider.
+ */
+export function createPublicIncidentSource(
+  providerId,
+  options = {},
+) {
+  const provider = getProvider(providerId);
+
+  if (provider.platform === 'socrata') {
+    return createSocrataPublicIncidentSource(providerId, options);
+  }
+
+  if (provider.platform === 'arcgis') {
+    return createArcGisPublicIncidentSource(providerId, options);
+  }
+
+  throw new TypeError(
+    `Unsupported Public Incidents platform: ${provider.platform}`,
+  );
+}
+
+/**
  * Compatibility factories retained for callers and tests.
  */
 export function createAustinFireIncidentSource(options = {}) {
@@ -170,6 +283,10 @@ export function createAustinFireIncidentSource(options = {}) {
 
 export function createSeattleFireIncidentSource(options = {}) {
   return createSocrataPublicIncidentSource('seattle-fire', options);
+}
+
+export function createPhoenixFireIncidentSource(options = {}) {
+  return createArcGisPublicIncidentSource('phoenix-fire', options);
 }
 
 /**
