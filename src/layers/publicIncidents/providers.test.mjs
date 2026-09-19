@@ -15,6 +15,18 @@ test('public incident provider registry has unique valid providers', () => {
     ids.add(provider.id);
 
     assert.equal(provider.platform, 'socrata');
+
+    assert.equal(typeof provider.cadenceMinutes, 'number');
+    assert.ok(
+      Number.isFinite(provider.cadenceMinutes) &&
+        provider.cadenceMinutes > 0,
+      `${provider.id} has invalid cadence`,
+    );
+
+    assert.ok(
+      ['live', 'recent', 'historical'].includes(provider.freshnessClass),
+      `${provider.id} has invalid freshness class`,
+    );
     assert.equal(typeof provider.agency, 'string');
     assert.ok(provider.agency.length > 0);
 

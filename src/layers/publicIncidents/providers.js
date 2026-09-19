@@ -5,6 +5,8 @@ export const PUBLIC_INCIDENT_PROVIDERS = Object.freeze([
     agency: 'Austin Fire Department',
     label: 'Austin Fire',
     platform: 'socrata',
+    cadenceMinutes: 5,
+    freshnessClass: 'live',
     endpoint:
       "https://data.austintexas.gov/resource/wpu4-x69d.json?$where=traffic_report_status='ACTIVE'&$order=published_date%20DESC&$limit=500",
     sourceUrl: 'https://data.austintexas.gov/d/wpu4-x69d',
@@ -26,6 +28,8 @@ export const PUBLIC_INCIDENT_PROVIDERS = Object.freeze([
     agency: 'Seattle Fire Department',
     label: 'Seattle Fire',
     platform: 'socrata',
+    cadenceMinutes: 5,
+    freshnessClass: 'live',
     endpoint:
       'https://data.seattle.gov/resource/kzjm-xkqj.json?$order=datetime%20DESC&$limit=500',
     sourceUrl: 'https://data.seattle.gov/d/kzjm-xkqj',
