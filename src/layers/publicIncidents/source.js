@@ -1,19 +1,19 @@
 import { normalizePublicIncidentSnapshot } from './records.js';
+import { PUBLIC_INCIDENT_PROVIDERS } from './providers.js';
 
-const AUSTIN_FIRE_URL =
-  "https://data.austintexas.gov/resource/wpu4-x69d.json?$where=traffic_report_status='ACTIVE'&$order=published_date%20DESC&$limit=500";
+function getProvider(providerId) {
+  const provider = PUBLIC_INCIDENT_PROVIDERS.find(
+    (candidate) => candidate.id === providerId,
+  );
 
-const SEATTLE_FIRE_URL =
-  'https://data.seattle.gov/resource/kzjm-xkqj.json?$order=datetime%20DESC&$limit=500';
+  if (!provider)
+    throw new Error(`Unknown Public Incidents provider: ${providerId}`);
+
+  return provider;
+}
 
 /**
  * Convert a timezone-less local datetime into an absolute timestamp.
- *
- * Seattle publishes values such as:
- *   2026-09-18T15:35:00.000
- *
- * Those represent Seattle wall-clock time rather than UTC. Using Date.parse()
- * directly would interpret the value in the browser/runtime's local timezone.
  */
 function parseLocalDateTimeInZone(value, timeZone) {
   if (typeof value !== 'string') return null;
@@ -36,21 +36,13 @@ function parseLocalDateTimeInZone(value, timeZone) {
     millisecondText = '0',
   ] = match;
 
-  const year = Number(yearText);
-  const month = Number(monthText);
-  const day = Number(dayText);
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  const second = Number(secondText);
-  const millisecond = Number(millisecondText.padEnd(3, '0'));
-
   const wallTimeUtc = Date.UTC(
-    year,
-    month - 1,
-    day,
-    hour,
-    minute,
-    second,
+    Number(yearText),
+    Number(monthText) - 1,
+    Number(dayText),
+    Number(hourText),
+    Number(minuteText),
+    Number(secondText),
     0,
   );
 
@@ -67,7 +59,6 @@ function parseLocalDateTimeInZone(value, timeZone) {
 
   let guess = wallTimeUtc;
 
-  // Two passes handle normal timezone/DST offset resolution.
   for (let i = 0; i < 2; i += 1) {
     const parts = Object.fromEntries(
       formatter
@@ -90,123 +81,99 @@ function parseLocalDateTimeInZone(value, timeZone) {
     guess = wallTimeUtc - offset;
   }
 
-  return guess + millisecond;
+  return guess + Number(millisecondText.padEnd(3, '0'));
 }
 
-/**
- * Adapt one Austin Fire incident into the provider-neutral Public Incidents
- * record consumed by the layer.
- */
-function adaptAustinFireIncident(row) {
-  const publishedTime = Date.parse(row?.published_date);
+function readField(row, fieldName) {
+  if (!fieldName) return '';
+  return row?.[fieldName];
+}
+
+function parseProviderTime(value, provider) {
+  if (value == null || value === '') return null;
+
+  if (provider.timeZone) {
+    return parseLocalDateTimeInZone(value, provider.timeZone);
+  }
+
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function adaptProviderIncident(row, provider) {
+  const { fields } = provider;
 
   return {
-    sourceId: row?.traffic_report_id,
-    provider: 'austin-fire',
-    type: row?.issue_reported,
-    title: row?.issue_reported,
-    description: row?.address,
-    lat: row?.latitude,
-    lon: row?.longitude,
-    time: Number.isFinite(publishedTime) ? publishedTime : null,
-    status: row?.traffic_report_status,
-    source: 'Austin Fire Department',
-    url: 'https://data.austintexas.gov/d/wpu4-x69d',
+    sourceId: readField(row, fields.sourceId),
+    provider: provider.id,
+    type: readField(row, fields.type),
+    title: readField(row, fields.title),
+    description: readField(row, fields.description),
+    lat: readField(row, fields.lat),
+    lon: readField(row, fields.lon),
+    time: parseProviderTime(readField(row, fields.time), provider),
+    status: readField(row, fields.status),
+    source: provider.agency,
+    url: provider.sourceUrl,
   };
 }
 
 /**
- * Adapt one Seattle Fire dispatch into the provider-neutral Public Incidents
- * record consumed by the layer.
+ * Construct a Socrata-backed Public Incidents source from a provider registry
+ * entry. Most future Socrata cities should require only a registry entry.
  */
-function adaptSeattleFireIncident(row) {
-  return {
-    sourceId: row?.incident_number,
-    provider: 'seattle-fire',
-    type: row?.type,
-    title: row?.type,
-    description: row?.address,
-    lat: row?.latitude,
-    lon: row?.longitude,
-    time: parseLocalDateTimeInZone(row?.datetime, 'America/Los_Angeles'),
-    status: '',
-    source: 'Seattle Fire Department',
-    url: 'https://data.seattle.gov/d/kzjm-xkqj',
-  };
-}
+export function createSocrataPublicIncidentSource(
+  providerId,
+  { fetchImpl = globalThis.fetch } = {},
+) {
+  const provider = getProvider(providerId);
 
-/**
- * Live non-medical Austin Fire incidents published through Austin Open Data.
- */
-export function createAustinFireIncidentSource({
-  fetchImpl = globalThis.fetch,
-} = {}) {
-  if (typeof fetchImpl !== 'function')
-    throw new TypeError('Austin Fire source requires fetch');
+  if (provider.platform !== 'socrata') {
+    throw new TypeError(
+      `${provider.id} is not a Socrata Public Incidents provider`,
+    );
+  }
+
+  if (typeof fetchImpl !== 'function') {
+    throw new TypeError(`${provider.label} source requires fetch`);
+  }
 
   return {
     async getSnapshot({ signal } = {}) {
       signal?.throwIfAborted();
 
-      const response = await fetchImpl(AUSTIN_FIRE_URL, { signal });
+      const response = await fetchImpl(provider.endpoint, { signal });
 
       if (!response.ok)
-        throw new Error(`Austin Fire HTTP ${response.status}`);
+        throw new Error(`${provider.label} HTTP ${response.status}`);
 
       const rows = await response.json();
 
       signal?.throwIfAborted();
 
       if (!Array.isArray(rows))
-        throw new Error('Austin Fire returned an invalid snapshot');
+        throw new Error(`${provider.label} returned an invalid snapshot`);
 
       return normalizePublicIncidentSnapshot(
-        rows.map(adaptAustinFireIncident),
+        rows.map((row) => adaptProviderIncident(row, provider)),
       );
     },
   };
 }
 
 /**
- * Seattle Fire Department 911 dispatches published through Seattle Open Data.
- *
- * Unlike Austin, Seattle does not publish an active/inactive status field.
- * Unknown status therefore remains blank rather than being inferred.
+ * Compatibility factories retained for callers and tests.
  */
-export function createSeattleFireIncidentSource({
-  fetchImpl = globalThis.fetch,
-} = {}) {
-  if (typeof fetchImpl !== 'function')
-    throw new TypeError('Seattle Fire source requires fetch');
+export function createAustinFireIncidentSource(options = {}) {
+  return createSocrataPublicIncidentSource('austin-fire', options);
+}
 
-  return {
-    async getSnapshot({ signal } = {}) {
-      signal?.throwIfAborted();
-
-      const response = await fetchImpl(SEATTLE_FIRE_URL, { signal });
-
-      if (!response.ok)
-        throw new Error(`Seattle Fire HTTP ${response.status}`);
-
-      const rows = await response.json();
-
-      signal?.throwIfAborted();
-
-      if (!Array.isArray(rows))
-        throw new Error('Seattle Fire returned an invalid snapshot');
-
-      return normalizePublicIncidentSnapshot(
-        rows.map(adaptSeattleFireIncident),
-      );
-    },
-  };
+export function createSeattleFireIncidentSource(options = {}) {
+  return createSocrataPublicIncidentSource('seattle-fire', options);
 }
 
 /**
  * Combine multiple provider sources into one Public Incidents snapshot.
- *
- * This keeps the application layer provider-neutral: GEV consumes one source
- * while individual cities remain independent adapters.
  */
 export function createCombinedPublicIncidentSource(sources) {
   if (
