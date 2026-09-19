@@ -187,7 +187,10 @@ export function createSocrataPublicIncidentSource(
     async getSnapshot({ signal } = {}) {
       signal?.throwIfAborted();
 
-      const response = await fetchImpl(provider.endpoint, { signal });
+      const response = await fetchImpl(
+  `/api/public-incidents/${encodeURIComponent(provider.id)}`,
+  { signal },
+);
 
       if (!response.ok)
         throw new Error(`${provider.label} HTTP ${response.status}`);
@@ -230,7 +233,10 @@ export function createArcGisPublicIncidentSource(
     async getSnapshot({ signal } = {}) {
       signal?.throwIfAborted();
 
-      const response = await fetchImpl(provider.endpoint, { signal });
+      const response = await fetchImpl(
+  `/api/public-incidents/${encodeURIComponent(provider.id)}`,
+  { signal },
+);
 
       if (!response.ok)
         throw new Error(`${provider.label} HTTP ${response.status}`);
