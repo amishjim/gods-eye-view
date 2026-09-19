@@ -45,7 +45,8 @@ export const PUBLIC_INCIDENT_PROVIDERS = Object.freeze([
       status: null,
     }),
   }),
-    Object.freeze({
+
+  Object.freeze({
     id: 'phoenix-fire',
     jurisdiction: 'Phoenix, Arizona, USA',
     agency: 'Phoenix Fire Department',
@@ -68,6 +69,7 @@ export const PUBLIC_INCIDENT_PROVIDERS = Object.freeze([
       status: null,
     }),
   }),
+
   Object.freeze({
     id: 'houston-active-incidents',
     jurisdiction: 'Houston, Texas, USA',
@@ -89,6 +91,30 @@ export const PUBLIC_INCIDENT_PROVIDERS = Object.freeze([
       lon: null,
       time: 'CALL_TIME',
       status: null,
+    }),
+  }),
+
+  Object.freeze({
+    id: 'san-diego-fire',
+    jurisdiction: 'San Diego, California, USA',
+    agency: 'San Diego Fire-Rescue Department',
+    label: 'San Diego Fire-Rescue',
+    platform: 'arcgis',
+    cadenceMinutes: 5,
+    freshnessClass: 'live',
+    endpoint:
+      'https://webmaps.sandiego.gov/arcgis/rest/services/SDFR/FireMap_Incidents/FeatureServer/0/query?where=IsActive%3D-1&outFields=*&returnGeometry=true&outSR=4326&f=geojson',
+    sourceUrl:
+      'https://webmaps.sandiego.gov/arcgis/rest/services/SDFR/FireMap_Incidents/FeatureServer/0',
+    fields: Object.freeze({
+      sourceId: 'MasterIncidentNumber',
+      type: 'ProblemCode',
+      title: 'ProblemDescription',
+      description: 'Address',
+      lat: null,
+      lon: null,
+      time: 'ResponseDate',
+      status: 'PriorityDescription',
     }),
   }),
 ]);

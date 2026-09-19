@@ -142,14 +142,14 @@ function adaptArcGisFeature(feature, provider) {
   }
 
   const [lon, lat] = coordinates;
-const { fields } = provider;
-const sourceId = readField(properties, fields.sourceId);
+  const { fields } = provider;
+  const sourceId = readField(properties, fields.sourceId);
 
-return {
-  sourceId:
-    sourceId == null || sourceId === ''
-      ? ''
-      : String(sourceId),
+  return {
+    sourceId:
+      sourceId == null || sourceId === ''
+        ? ''
+        : String(sourceId),
     provider: provider.id,
     type: readField(properties, fields.type),
     title: readField(properties, fields.title),
@@ -292,6 +292,7 @@ export function createSeattleFireIncidentSource(options = {}) {
 export function createPhoenixFireIncidentSource(options = {}) {
   return createArcGisPublicIncidentSource('phoenix-fire', options);
 }
+
 export function createHoustonActiveIncidentSource(options = {}) {
   return createArcGisPublicIncidentSource(
     'houston-active-incidents',
@@ -299,8 +300,16 @@ export function createHoustonActiveIncidentSource(options = {}) {
   );
 }
 
+export function createSanDiegoFireIncidentSource(options = {}) {
+  return createArcGisPublicIncidentSource('san-diego-fire', options);
+}
+
 /**
  * Combine multiple provider sources into one Public Incidents snapshot.
+ *
+ * Provider failures are isolated. A temporary outage in one jurisdiction
+ * must not take every other jurisdiction offline. The combined source only
+ * fails when every provider fails.
  */
 export function createCombinedPublicIncidentSource(sources) {
   if (
@@ -317,11 +326,36 @@ export function createCombinedPublicIncidentSource(sources) {
     async getSnapshot({ signal } = {}) {
       signal?.throwIfAborted();
 
-      const snapshots = await Promise.all(
+      const results = await Promise.allSettled(
         sources.map((source) => source.getSnapshot({ signal })),
       );
 
       signal?.throwIfAborted();
+
+      const snapshots = [];
+      const failures = [];
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          snapshots.push(result.value);
+        } else {
+          failures.push(result.reason);
+        }
+      }
+
+      if (snapshots.length === 0) {
+        throw new AggregateError(
+          failures,
+          'All Public Incidents providers failed',
+        );
+      }
+
+      if (failures.length > 0) {
+        console.warn(
+          `Public Incidents: ${failures.length} provider(s) failed; displaying available providers`,
+          failures,
+        );
+      }
 
       return snapshots.flat();
     },
