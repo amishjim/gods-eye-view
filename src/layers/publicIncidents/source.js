@@ -12,6 +12,10 @@ function getProvider(providerId) {
   return provider;
 }
 
+function providerProxyUrl(provider) {
+  return `/api/public-incidents/${encodeURIComponent(provider.id)}`;
+}
+
 /**
  * Convert a timezone-less local datetime into an absolute timestamp.
  */
@@ -92,9 +96,6 @@ function readField(row, fieldName) {
 function parseProviderTime(value, provider) {
   if (value == null || value === '') return null;
 
-  /*
-   * ArcGIS commonly returns date fields as epoch milliseconds.
-   */
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
@@ -147,9 +148,7 @@ function adaptArcGisFeature(feature, provider) {
 
   return {
     sourceId:
-      sourceId == null || sourceId === ''
-        ? ''
-        : String(sourceId),
+      sourceId == null || sourceId === '' ? '' : String(sourceId),
     provider: provider.id,
     type: readField(properties, fields.type),
     title: readField(properties, fields.title),
@@ -163,9 +162,139 @@ function adaptArcGisFeature(feature, provider) {
   };
 }
 
+function childText(element, localName) {
+  if (!element) return '';
+
+  for (const child of element.children) {
+    if (child.localName === localName) {
+      return child.textContent?.trim() || '';
+    }
+  }
+
+  return '';
+}
+
+function rssIncident(item, provider) {
+  const title = childText(item, 'title');
+  const description = childText(item, 'description');
+  const guid = childText(item, 'guid');
+  const pubDate = childText(item, 'pubDate');
+  const lat = childText(item, 'lat');
+  const lon = childText(item, 'long');
+
+  const idMatch = /\bID:\s*([A-Za-z0-9_-]+)/i.exec(description);
+  const statusMatch = /\bStatus:\s*([^,]+)/i.exec(description);
+
+  const sourceId =
+    idMatch?.[1] ||
+    guid.split('?').pop() ||
+    guid;
+
+  const titleParts = title.split(/\s+at\s+/i);
+  const type = titleParts[0]?.trim() || title;
+  const location =
+    titleParts.length > 1
+      ? titleParts.slice(1).join(' at ').trim()
+      : title;
+
+  return {
+    sourceId,
+    provider: provider.id,
+    type,
+    title: type,
+    description: location,
+    lat,
+    lon,
+    time: parseProviderTime(pubDate, provider),
+    status: statusMatch?.[1]?.trim() || '',
+    source: provider.agency,
+    url: provider.sourceUrl,
+  };
+}
+
+function atomIncident(entry, provider) {
+  const id = childText(entry, 'id');
+  const title = childText(entry, 'title');
+  const published = childText(entry, 'published');
+  const updated = childText(entry, 'updated');
+  const point = childText(entry, 'point');
+
+  const coordinates = point.split(/\s+/).filter(Boolean);
+  const lat = coordinates[0] || '';
+  const lon = coordinates[1] || '';
+
+  let type = '';
+  for (const child of entry.children) {
+    if (child.localName === 'category') {
+      type =
+        child.getAttribute('label') ||
+        child.getAttribute('term') ||
+        '';
+      break;
+    }
+  }
+
+  const sourceId =
+    id.split('/').pop() ||
+    id.split(':').pop() ||
+    id;
+
+  const titleParts = title.split(/\s+at\s+/i);
+  const location =
+    titleParts.length > 1
+      ? titleParts.slice(1).join(' at ').trim()
+      : title;
+
+  return {
+    sourceId,
+    provider: provider.id,
+    type: type || titleParts[0]?.trim() || title,
+    title: type || titleParts[0]?.trim() || title,
+    description: location,
+    lat,
+    lon,
+    time: parseProviderTime(published || updated, provider),
+    status: '',
+    source: provider.agency,
+    url: provider.sourceUrl,
+  };
+}
+
+function parseXmlIncidentSnapshot(xmlText, provider) {
+  if (typeof DOMParser !== 'function') {
+    throw new Error(`${provider.label} XML parsing is unavailable`);
+  }
+
+  const document = new DOMParser().parseFromString(
+    xmlText,
+    'application/xml',
+  );
+
+  if (document.querySelector('parsererror')) {
+    throw new Error(`${provider.label} returned invalid XML`);
+  }
+
+  let records;
+
+  if (provider.format === 'rss') {
+    records = Array.from(document.getElementsByTagName('item')).map((item) =>
+      rssIncident(item, provider),
+    );
+  } else if (provider.format === 'atom') {
+    records = Array.from(document.getElementsByTagNameNS('*', 'entry')).map(
+      (entry) => atomIncident(entry, provider),
+    );
+  } else {
+    throw new TypeError(
+      `Unsupported Public Incidents XML format: ${provider.format}`,
+    );
+  }
+
+  return normalizePublicIncidentSnapshot(records);
+}
+
 /**
- * Construct a Socrata-backed Public Incidents source from a provider registry
- * entry. Most future Socrata cities should require only a registry entry.
+ * Construct a Socrata-backed Public Incidents source.
  */
 export function createSocrataPublicIncidentSource(
   providerId,
@@ -187,10 +316,9 @@ export function createSocrataPublicIncidentSource(
     async getSnapshot({ signal } = {}) {
       signal?.throwIfAborted();
 
-      const response = await fetchImpl(
-  `/api/public-incidents/${encodeURIComponent(provider.id)}`,
-  { signal },
-);
+      const response = await fetchImpl(providerProxyUrl(provider), {
+        signal,
+      });
 
       if (!response.ok)
         throw new Error(`${provider.label} HTTP ${response.status}`);
@@ -210,8 +338,7 @@ export function createSocrataPublicIncidentSource(
 }
 
 /**
- * Construct an ArcGIS GeoJSON-backed Public Incidents source from a provider
- * registry entry.
+ * Construct an ArcGIS GeoJSON-backed Public Incidents source.
  */
 export function createArcGisPublicIncidentSource(
   providerId,
@@ -233,10 +360,9 @@ export function createArcGisPublicIncidentSource(
     async getSnapshot({ signal } = {}) {
       signal?.throwIfAborted();
 
-      const response = await fetchImpl(
-  `/api/public-incidents/${encodeURIComponent(provider.id)}`,
-  { signal },
-);
+      const response = await fetchImpl(providerProxyUrl(provider), {
+        signal,
+      });
 
       if (!response.ok)
         throw new Error(`${provider.label} HTTP ${response.status}`);
@@ -263,12 +389,48 @@ export function createArcGisPublicIncidentSource(
 }
 
 /**
+ * Construct an RSS/Atom/GeoRSS-backed Public Incidents source.
+ */
+export function createXmlPublicIncidentSource(
+  providerId,
+  { fetchImpl = globalThis.fetch } = {},
+) {
+  const provider = getProvider(providerId);
+
+  if (provider.platform !== 'xml') {
+    throw new TypeError(
+      `${provider.id} is not an XML Public Incidents provider`,
+    );
+  }
+
+  if (typeof fetchImpl !== 'function') {
+    throw new TypeError(`${provider.label} source requires fetch`);
+  }
+
+  return {
+    async getSnapshot({ signal } = {}) {
+      signal?.throwIfAborted();
+
+      const response = await fetchImpl(providerProxyUrl(provider), {
+        signal,
+      });
+
+      if (!response.ok)
+        throw new Error(`${provider.label} HTTP ${response.status}`);
+
+      const xmlText = await response.text();
+
+      signal?.throwIfAborted();
+
+      return parseXmlIncidentSnapshot(xmlText, provider);
+    },
+  };
+}
+
+/**
  * Construct the correct source implementation for any registered provider.
  */
-export function createPublicIncidentSource(
-  providerId,
-  options = {},
-) {
+export function createPublicIncidentSource(providerId, options = {}) {
   const provider = getProvider(providerId);
 
   if (provider.platform === 'socrata') {
@@ -277,6 +439,10 @@ export function createPublicIncidentSource(
 
   if (provider.platform === 'arcgis') {
     return createArcGisPublicIncidentSource(providerId, options);
+  }
+
+  if (provider.platform === 'xml') {
+    return createXmlPublicIncidentSource(providerId, options);
   }
 
   throw new TypeError(
@@ -308,6 +474,14 @@ export function createHoustonActiveIncidentSource(options = {}) {
 
 export function createSanDiegoFireIncidentSource(options = {}) {
   return createArcGisPublicIncidentSource('san-diego-fire', options);
+}
+
+export function createMonroeCounty911IncidentSource(options = {}) {
+  return createXmlPublicIncidentSource('monroe-county-911', options);
+}
+
+export function createPortland911IncidentSource(options = {}) {
+  return createXmlPublicIncidentSource('portland-911', options);
 }
 
 /**

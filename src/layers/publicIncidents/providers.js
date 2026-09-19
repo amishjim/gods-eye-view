@@ -117,4 +117,30 @@ export const PUBLIC_INCIDENT_PROVIDERS = Object.freeze([
       status: 'PriorityDescription',
     }),
   }),
+
+  Object.freeze({
+    id: 'monroe-county-911',
+    jurisdiction: 'Monroe County, New York, USA',
+    agency: 'Monroe County 911',
+    label: 'Monroe County 911',
+    platform: 'xml',
+    format: 'rss',
+    cadenceMinutes: 5,
+    freshnessClass: 'live',
+    endpoint: 'https://www.monroecounty.gov/incidents911.rss',
+    sourceUrl: 'https://www.monroecounty.gov/safety-incidents',
+  }),
+
+  Object.freeze({
+    id: 'portland-911',
+    jurisdiction: 'Portland, Oregon, USA',
+    agency: 'Portland 911',
+    label: 'Portland 911',
+    platform: 'xml',
+    format: 'atom',
+    cadenceMinutes: 5,
+    freshnessClass: 'live',
+    endpoint: 'https://www.portlandmaps.com/scripts/911incidents.cfm',
+    sourceUrl: 'https://www.portlandmaps.com/',
+  }),
 ]);
