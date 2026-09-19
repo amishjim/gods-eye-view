@@ -43,16 +43,27 @@ export function normalizePublicIncident(record) {
     url: String(record.url ?? ''),
   });
 }
-
-/** Normalize a complete provider snapshot, dropping malformed records. */
+/**
+ * Normalize a complete provider snapshot, dropping malformed records and
+ * duplicate incidents. Providers may occasionally publish the same incident
+ * more than once in a single response, but the display layer requires each
+ * stableId to be unique.
+ */
 export function normalizePublicIncidentSnapshot(records) {
   if (!Array.isArray(records)) return [];
 
   const normalized = [];
+  const seenStableIds = new Set();
 
   for (const record of records) {
     const incident = normalizePublicIncident(record);
-    if (incident) normalized.push(incident);
+
+    if (!incident || seenStableIds.has(incident.stableId)) {
+      continue;
+    }
+
+    seenStableIds.add(incident.stableId);
+    normalized.push(incident);
   }
 
   return normalized;

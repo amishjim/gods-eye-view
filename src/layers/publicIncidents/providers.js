@@ -68,4 +68,27 @@ export const PUBLIC_INCIDENT_PROVIDERS = Object.freeze([
       status: null,
     }),
   }),
+  Object.freeze({
+    id: 'houston-active-incidents',
+    jurisdiction: 'Houston, Texas, USA',
+    agency: 'Houston Emergency Center',
+    label: 'Houston Active Incidents',
+    platform: 'arcgis',
+    cadenceMinutes: 5,
+    freshnessClass: 'live',
+    endpoint:
+      'https://mycity2.houstontx.gov/pubgis01/rest/services/HEC/HEC_Active_Incidents/MapServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=geojson',
+    sourceUrl:
+      'https://mycity2.houstontx.gov/pubgis01/rest/services/HEC/HEC_Active_Incidents/MapServer/0',
+    fields: Object.freeze({
+      sourceId: 'UID',
+      type: 'Agency',
+      title: 'IncidentType',
+      description: 'Address',
+      lat: null,
+      lon: null,
+      time: 'CALL_TIME',
+      status: null,
+    }),
+  }),
 ]);

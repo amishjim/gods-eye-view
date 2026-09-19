@@ -151,3 +151,39 @@ test('snapshot normalization returns an empty array for non-arrays', () => {
   assert.deepEqual(normalizePublicIncidentSnapshot(null), []);
   assert.deepEqual(normalizePublicIncidentSnapshot({}), []);
 });
+
+test('snapshot normalization removes duplicate stable IDs', () => {
+  const records = [
+    {
+      sourceId: 'DUPLICATE-123',
+      provider: 'test-provider',
+      type: 'Fire',
+      title: 'First copy',
+      description: 'First record',
+      lat: 29.76,
+      lon: -95.36,
+      time: 1789783620000,
+      source: 'Test Agency',
+    },
+    {
+      sourceId: 'DUPLICATE-123',
+      provider: 'test-provider',
+      type: 'Fire',
+      title: 'Second copy',
+      description: 'Duplicate record',
+      lat: 29.76,
+      lon: -95.36,
+      time: 1789783620000,
+      source: 'Test Agency',
+    },
+  ];
+
+  const snapshot = normalizePublicIncidentSnapshot(records);
+
+  assert.equal(snapshot.length, 1);
+  assert.equal(
+    snapshot[0].stableId,
+    'test-provider:DUPLICATE-123',
+  );
+  assert.equal(snapshot[0].title, 'First copy');
+});

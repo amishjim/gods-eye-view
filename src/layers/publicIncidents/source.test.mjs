@@ -5,6 +5,7 @@ import {
   createAustinFireIncidentSource,
   createSeattleFireIncidentSource,
   createPhoenixFireIncidentSource,
+  createHoustonActiveIncidentSource,
   createCombinedPublicIncidentSource,
 } from './source.js';
 
@@ -565,4 +566,55 @@ test('Phoenix source requires a fetch implementation', () => {
     () => createPhoenixFireIncidentSource({ fetchImpl: null }),
     /Phoenix Fire source requires fetch/,
   );
+});
+test('adapts Houston ArcGIS features into Public Incident records', async () => {
+  const source = createHoustonActiveIncidentSource({
+    fetchImpl: async () => ({
+      ok: true,
+      async json() {
+        return {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              id: 29685964,
+              geometry: {
+                type: 'Point',
+                coordinates: [-95.5514, 29.686],
+              },
+              properties: {
+                UID: 29685964,
+                Agency: 'F',
+                Address: 'CLUB CREEK DR',
+                CrossStreet: 'BLK GREENFORK DR',
+                CALL_TIME: 1789782420000,
+                IncidentType: 'EMS EVENT',
+                ALARM_LEVEL: 0,
+                NO_UNITS: 1,
+                Units: 'E010',
+              },
+            },
+          ],
+        };
+      },
+    }),
+  });
+
+  const snapshot = await source.getSnapshot();
+
+  assert.equal(snapshot.length, 1);
+
+  const incident = snapshot[0];
+
+  assert.equal(incident.stableId, 'houston-active-incidents:29685964');
+  assert.equal(incident.sourceId, '29685964');
+  assert.equal(incident.provider, 'houston-active-incidents');
+  assert.equal(incident.type, 'F');
+  assert.equal(incident.title, 'EMS EVENT');
+  assert.equal(incident.description, 'CLUB CREEK DR');
+  assert.equal(incident.lat, 29.686);
+  assert.equal(incident.lon, -95.5514);
+  assert.equal(incident.time, 1789782420000);
+  assert.equal(incident.status, '');
+  assert.equal(incident.source, 'Houston Emergency Center');
 });

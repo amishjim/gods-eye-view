@@ -142,10 +142,14 @@ function adaptArcGisFeature(feature, provider) {
   }
 
   const [lon, lat] = coordinates;
-  const { fields } = provider;
+const { fields } = provider;
+const sourceId = readField(properties, fields.sourceId);
 
-  return {
-    sourceId: readField(properties, fields.sourceId),
+return {
+  sourceId:
+    sourceId == null || sourceId === ''
+      ? ''
+      : String(sourceId),
     provider: provider.id,
     type: readField(properties, fields.type),
     title: readField(properties, fields.title),
@@ -287,6 +291,12 @@ export function createSeattleFireIncidentSource(options = {}) {
 
 export function createPhoenixFireIncidentSource(options = {}) {
   return createArcGisPublicIncidentSource('phoenix-fire', options);
+}
+export function createHoustonActiveIncidentSource(options = {}) {
+  return createArcGisPublicIncidentSource(
+    'houston-active-incidents',
+    options,
+  );
 }
 
 /**
