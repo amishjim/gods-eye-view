@@ -42,14 +42,7 @@ test('adapts Austin Fire records into Public Incident records', async () => {
     signal: controller.signal,
   });
 
-  assert.match(
-    requestedUrl,
-    /data\.austintexas\.gov\/resource\/wpu4-x69d\.json/,
-  );
-  assert.match(
-    requestedUrl,
-    /traffic_report_status='ACTIVE'/,
-  );
+  assert.equal(requestedUrl, '/api/public-incidents/austin-fire');
   assert.equal(requestedOptions.signal, controller.signal);
 
   assert.equal(snapshot.length, 1);
@@ -237,11 +230,7 @@ test('adapts Seattle Fire records into Public Incident records', async () => {
   const controller = new AbortController();
   const snapshot = await source.getSnapshot({ signal: controller.signal });
 
-  assert.match(
-    requestedUrl,
-    /data\.seattle\.gov\/resource\/kzjm-xkqj\.json/,
-  );
-  assert.match(requestedUrl, /\$order=datetime%20DESC/);
+  assert.equal(requestedUrl, '/api/public-incidents/seattle-fire');
   assert.equal(requestedOptions.signal, controller.signal);
 
   assert.equal(snapshot.length, 1);
@@ -450,11 +439,7 @@ test('adapts Phoenix Fire GeoJSON features into Public Incident records', async 
     signal: controller.signal,
   });
 
-  assert.match(
-    requestedUrl,
-    /maps\.phoenix\.gov\/phxfire\/rest\/services\/Active_Incidents__Public/,
-  );
-  assert.match(requestedUrl, /f=geojson/);
+  assert.equal(requestedUrl, '/api/public-incidents/phoenix-fire');
   assert.equal(requestedOptions.signal, controller.signal);
 
   assert.equal(snapshot.length, 1);
