@@ -380,6 +380,7 @@ export function createPublicIncidentsLayer({ source, services = {} } = {}) {
     getStats() {
       return {
         count: _count,
+        countLabel: `${_count} total`,
         lastUpdate: _lastUpdate,
         error: _lastError,
       };
