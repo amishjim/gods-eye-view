@@ -1,0 +1,161 @@
+name: Submit a Public Incident Feed
+description: Help us find official live or near-real-time public-safety incident data anywhere in the world.
+title: "[Feed]: "
+labels:
+  - public-incident-feed
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # Help put your area on the map
+
+        God's Eye View is building a worldwide catalog of official public-safety incident sources.
+
+        **You do not need to be a programmer, and you do not need to answer every question.**
+
+        If all you know is that your city, county, or local agency has an official webpage showing current incidents, that is useful. Submit what you know and choose **I don't know** when appropriate.
+
+        Want help investigating the source?
+
+        - **Quick AI Scout:** See the Quick Scout Prompt in the [Public Incident Feed Research Field Manual](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#quick-scout-prompt).
+        - **Detailed AI Research:** See the Full Research Prompt in the [Public Incident Feed Research Field Manual](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#full-research-prompt).
+        - **Technical help:** The [Field Manual](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md) explains ArcGIS, Socrata, RSS, Atom, JSON, GeoJSON, coordinates, incident IDs, timestamps, and other terms.
+
+        A submission is a lead. Project maintainers will independently verify sources before adding them to God's Eye View.
+
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: What city, county, region, state/province, and country does this source cover?
+      placeholder: "Example: Monroe County, New York, USA"
+    validations:
+      required: true
+
+  - type: input
+    id: agency
+    attributes:
+      label: Agency or organization
+      description: Who appears to publish or operate the incident information? If you do not know, enter "Unknown."
+      placeholder: "Example: Monroe County 911"
+    validations:
+      required: true
+
+  - type: input
+    id: public-page
+    attributes:
+      label: Official public incident webpage
+      description: Paste the official government or agency webpage where the public can see the incidents. If you only have this link, that is enough to make a useful submission.
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: freshness
+    attributes:
+      label: Does the information appear to be current?
+      description: Look for incidents or timestamps from today or other signs that the page is actively updating.
+      options:
+        - "Yes - it appears live or near-real-time"
+        - "Maybe - I am not sure"
+        - "No - it appears historical or stale"
+        - "I don't know"
+    validations:
+      required: true
+
+  - type: textarea
+    id: feed
+    attributes:
+      label: Possible data feed or API
+      description: |
+        If you found a machine-readable feed, API, GIS service, RSS/Atom feed, JSON/GeoJSON endpoint, or similar source, paste it here.
+
+        Leave this blank if you did not find one.
+
+        Need help? See [Finding the Actual Data Feed](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#finding-the-actual-data-feed).
+      placeholder: |
+        Example:
+        https://example.gov/arcgis/rest/services/ActiveIncidents/FeatureServer/0
+
+        Or tell us what you found.
+
+  - type: dropdown
+    id: format
+    attributes:
+      label: What kind of source does it appear to be?
+      description: |
+        Take your best guess. "I don't know" is completely fine.
+
+        The [Field Manual](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#finding-the-actual-data-feed) shows how to recognize common formats.
+      options:
+        - "I don't know"
+        - "ArcGIS FeatureServer / MapServer"
+        - "Socrata / open-data API"
+        - "JSON / GeoJSON"
+        - "RSS"
+        - "Atom / GeoRSS"
+        - "XML"
+        - "CSV"
+        - "Public webpage only"
+        - "Other"
+
+  - type: dropdown
+    id: coordinates
+    attributes:
+      label: Does the source appear to contain geographic coordinates?
+      description: |
+        Coordinates may look like `38.9176, -77.2290` or appear in fields named latitude, longitude, lat, lon, lng, coordinates, X, or Y.
+
+        Not sure? See [What Are Coordinates?](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#what-are-coordinates).
+      options:
+        - "Yes"
+        - "No"
+        - "I don't know"
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample incident or useful field names
+      description: |
+        Optional. Paste one small example or list useful fields you noticed, such as incident ID, type, location, latitude/longitude, time, or status.
+
+        Please do not add personal information from other sources or try to identify people involved in an incident.
+      placeholder: |
+        Example:
+        incident_number
+        incident_type
+        address
+        latitude
+        longitude
+        call_time
+        status
+
+  - type: textarea
+    id: access
+    attributes:
+      label: Access, terms, or restrictions
+      description: |
+        Optional. Tell us if you noticed an API key requirement, login, cost, usage limit, terms of service, license, or other restriction.
+
+        Do not bypass authentication, CAPTCHAs, access controls, or other restrictions.
+      placeholder: "Example: Publicly accessible with no login; terms unknown."
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else you found?
+      description: |
+        Add anything that might help us investigate the source.
+
+        Useful information could include update frequency, platform/vendor name, an agency contact, another official link, something your AI research found, or simply what you observed while using the page.
+
+        If you used the Quick Scout or Full Research Prompt, you may paste useful results here.
+      placeholder: "Tell us anything else that may help."
+
+  - type: checkboxes
+    id: source-confirmation
+    attributes:
+      label: Source confirmation
+      options:
+        - label: I believe the public incident webpage I submitted is operated by a government agency, emergency service, or other authoritative public source.
+          required: true

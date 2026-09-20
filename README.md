@@ -94,7 +94,17 @@ Future enrichment may associate incidents with official resources, local reporti
 
 Detailed provider provenance, endpoints, field mappings, limitations, and implementation notes are maintained in [`PUBLIC_DATA_SOURCES.md`](PUBLIC_DATA_SOURCES.md).
 
----
+### Help expand Public Incidents
+
+Public-safety data is fragmented across thousands of cities, counties, regions, and agencies worldwide. You can help us find it.
+
+**You do not need to be a programmer.** If your local government or emergency service publishes an official page showing current fire, EMS, police, 911/CAD, rescue, traffic, or other public-safety incidents, that alone can be a useful lead.
+
+- **[Submit a Public Incident Feed](../../issues/new?template=public-incident-feed.yml)** - tell us about an official source in your area.
+- **[Public Incident Feed Research Field Manual](PUBLIC_INCIDENTS_FIELD_MANUAL.md)** - optional help identifying APIs, ArcGIS, Socrata, RSS/Atom, coordinates, incident IDs, and other technical details.
+- The Field Manual also includes **Quick Scout** and **Full Research** prompts you can give to your own AI assistant, plus a template for asking a local agency about publicly available incident data.
+
+Incomplete leads are welcome. Project maintainers independently verify sources before incorporating them.
 
 ---
 
