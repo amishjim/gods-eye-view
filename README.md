@@ -54,6 +54,48 @@ trajectories are coarse estimates.
 
 Start with the included data sources, then add your own. Each layer is a separate module.
 
+## Public Incidents Extension
+
+This fork adds a **Public Incidents** layer for geographically identifiable, time-sensitive public-safety events from authoritative public sources.
+
+The goal is not to build individual city-specific layers. Public Incidents uses a provider-neutral architecture that normalizes different public dispatch, fire, 911, GIS, and open-data systems into a common incident record for the globe.
+
+### Current coverage
+
+Seven jurisdictions are currently registered:
+
+- Austin Fire Department — Austin, Texas
+- Seattle Fire Department — Seattle, Washington
+- Phoenix Fire Department — Phoenix, Arizona
+- Houston Emergency Center — Houston, Texas
+- San Diego Fire-Rescue Department — San Diego, California
+- Monroe County 911 — Monroe County, New York
+- Portland 911 — Portland, Oregon
+
+Current provider families include **Socrata**, **ArcGIS REST / GeoJSON**, and **XML syndication using RSS or Atom/GeoRSS**.
+
+Public Incidents polls registered sources approximately every five minutes. Provider-specific adapters normalize incident identity, type, location, coordinates, time, status, and source information where those fields are available.
+
+### Designed for imperfect public infrastructure
+
+Public incident feeds do not all behave the same way. Some expose JSON APIs, some publish ArcGIS services, and others provide RSS or Atom feeds. Some also prohibit direct browser access through CORS policy.
+
+This fork includes an allowlisted server-side provider proxy so the browser can retrieve registered authoritative sources through a consistent same-origin interface without operating an unrestricted URL proxy.
+
+Providers also fail independently. If one public system is unavailable, incidents from healthy providers continue to display. An unavailable provider is not treated as a jurisdiction reporting zero incidents.
+
+Future work includes exposing provider health directly in the interface so users can distinguish a quiet jurisdiction from an unavailable upstream source.
+
+### Data integrity
+
+Public Incidents does not infer facts that authoritative sources do not provide. Incident type alone does not establish injuries, casualties, cause, severity, or identity.
+
+Future enrichment may associate incidents with official resources, local reporting, public-safety radio, nearby public cameras, or public/social information, but proximity, timing, or matching keywords alone are not sufficient to claim that two sources describe the same incident.
+
+Detailed provider provenance, endpoints, field mappings, limitations, and implementation notes are maintained in [`PUBLIC_DATA_SOURCES.md`](PUBLIC_DATA_SOURCES.md).
+
+---
+
 ---
 
 ## 🎛️ What This Thing Does
