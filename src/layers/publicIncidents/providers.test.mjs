@@ -19,7 +19,7 @@ test('public incident provider registry has unique valid providers', () => {
     ids.add(provider.id);
 
     assert.ok(
-      ['socrata', 'arcgis'].includes(provider.platform),
+      ['socrata', 'arcgis', 'xml'].includes(provider.platform),
       `${provider.id} has invalid platform`,
     );
 
@@ -35,6 +35,9 @@ test('public incident provider registry has unique valid providers', () => {
       `${provider.id} has invalid freshness class`,
     );
 
+    assert.equal(typeof provider.jurisdiction, 'string');
+    assert.ok(provider.jurisdiction.length > 0);
+
     assert.equal(typeof provider.agency, 'string');
     assert.ok(provider.agency.length > 0);
 
@@ -47,7 +50,26 @@ test('public incident provider registry has unique valid providers', () => {
     assert.equal(typeof provider.sourceUrl, 'string');
     assert.match(provider.sourceUrl, /^https:\/\//);
 
-    assert.equal(typeof provider.fields, 'object');
+    if (provider.platform === 'xml') {
+      assert.ok(
+        ['rss', 'atom'].includes(provider.format),
+        `${provider.id} has invalid XML format`,
+      );
+
+      assert.equal(
+        provider.fields,
+        undefined,
+        `${provider.id} XML provider should not define field mappings`,
+      );
+
+      continue;
+    }
+
+    assert.equal(
+      typeof provider.fields,
+      'object',
+      `${provider.id} missing field mappings`,
+    );
 
     for (const fieldName of [
       'sourceId',
@@ -74,7 +96,9 @@ test('public incident provider registry has unique valid providers', () => {
         'string',
         `${provider.id} missing longitude field mapping`,
       );
-    } else if (provider.platform === 'arcgis') {
+    }
+
+    if (provider.platform === 'arcgis') {
       assert.equal(
         provider.fields.lat,
         null,
