@@ -170,41 +170,63 @@ Record the rejection reason so future contributors do not repeat the same invest
 
 A typical successful source may progress through:
 
-CANDIDATE  
-→ PUBLIC-CONFIRMED  
-→ DATA-CONFIRMED  
-→ DEVELOPMENT  
-→ INTEGRATED  
-→ VERIFIED
+```text
+CANDIDATE
+    ↓
+PUBLIC-CONFIRMED
+    ↓
+DATA-CONFIRMED
+    ↓
+DEVELOPMENT
+    ↓
+INTEGRATED
+    ↓
+VERIFIED
+```
 
 Not every source will pass through every stage.
 
 A verified source may later move to:
 
-VERIFIED  
-→ DEGRADED
+```text
+VERIFIED
+    ↓
+DEGRADED
+```
 
 or:
 
-VERIFIED  
-→ TEMPORARILY-UNAVAILABLE
+```text
+VERIFIED
+    ↓
+TEMPORARILY-UNAVAILABLE
+```
 
 or:
 
-VERIFIED  
-→ BROKEN
+```text
+VERIFIED
+    ↓
+BROKEN
+```
 
 and eventually:
 
-BROKEN  
-→ VERIFIED
+```text
+BROKEN
+    ↓
+VERIFIED
+```
 
 if repaired.
 
 A permanently discontinued source may move to:
 
-BROKEN  
-→ RETIRED
+```text
+BROKEN
+    ↓
+RETIRED
+```
 
 ## Status Is Not Source Quality
 
@@ -232,3 +254,96 @@ Example:
 ```text
 Status: VERIFIED
 Verified: 2026-09-25
+```
+
+This helps distinguish recently confirmed sources from integrations that may not have been checked for months.
+
+## Last Checked
+
+Where practical, maintain a separate `last_checked` value.
+
+Example:
+
+```text
+Status: VERIFIED
+Verified: 2026-09-18
+Last checked: 2026-09-25
+```
+
+The verification date records when the integration was established or substantially reverified.
+
+The last-checked date records the most recent routine confirmation.
+
+## Failure Notes
+
+For DEGRADED, TEMPORARILY-UNAVAILABLE, BROKEN, RETIRED, or REJECTED sources, include a short explanation.
+
+Example:
+
+```text
+Status: BROKEN
+Last checked: 2026-09-25
+Reason: Previous JSON endpoint now returns 404.
+```
+
+Useful failure information includes:
+
+- HTTP status
+- error message
+- observed response change
+- date first noticed
+- suspected vendor migration
+- replacement URL
+- related jurisdictions affected
+
+## Provider-Family Impact
+
+When a source fails, determine whether the failure appears specific to one jurisdiction or affects a provider family.
+
+If several jurisdictions share the same technical provider, one failure may indicate a broader change.
+
+Provider-family changes should be documented because fixing one integration may solve several jurisdictions at once.
+
+## Do Not Guess Status
+
+If the current condition of a source is unknown, do not mark it VERIFIED simply because it worked previously.
+
+Use the most accurate status supported by current evidence.
+
+When necessary, record:
+
+```text
+Status: UNKNOWN
+```
+
+with an explanation of why the source has not recently been checked.
+
+UNKNOWN should be temporary and should trigger future verification.
+
+## Contributor Submissions
+
+Community-submitted sources should normally begin as:
+
+```text
+Status: CANDIDATE
+```
+
+unless a project maintainer or contributor independently verifies them.
+
+Submission alone does not establish source validity.
+
+## AI-Discovered Sources
+
+Sources suggested by AI must begin as:
+
+```text
+Status: CANDIDATE
+```
+
+AI output cannot elevate a source to PUBLIC-CONFIRMED, DATA-CONFIRMED, or VERIFIED without independent examination of the actual source.
+
+## Guiding Principle
+
+The source registry should tell contributors what is actually known.
+
+**Do not confuse discovered, plausible, previously working, or AI-suggested sources with currently verified sources.**
