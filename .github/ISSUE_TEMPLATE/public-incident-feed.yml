@@ -3,6 +3,7 @@ description: Help us find official live or near-real-time public-safety incident
 title: "[Feed]: "
 labels:
   - public-incident-feed
+
 body:
   - type: markdown
     attributes:
@@ -17,9 +18,9 @@ body:
 
         Want help investigating the source?
 
-        - **Quick AI Scout:** See the Quick Scout Prompt in the [Public Incident Feed Research Field Manual](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#quick-scout-prompt).
-        - **Detailed AI Research:** See the Full Research Prompt in the [Public Incident Feed Research Field Manual](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#full-research-prompt).
-        - **Technical help:** The [Field Manual](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md) explains ArcGIS, Socrata, RSS, Atom, JSON, GeoJSON, coordinates, incident IDs, timestamps, and other terms.
+        - **Quick AI Scout:** See the Quick Scout Prompt in the [Public Incident Feed Research Field Manual](../../docs/public-incidents/PUBLIC-INCIDENTS-FIELD-MANUAL.md#quick-scout-prompt).
+        - **Detailed AI Research:** See the Full Research Prompt in the [Public Incident Feed Research Field Manual](../../docs/public-incidents/PUBLIC-INCIDENTS-FIELD-MANUAL.md#full-research-prompt).
+        - **Technical help:** The [Field Manual](../../docs/public-incidents/PUBLIC-INCIDENTS-FIELD-MANUAL.md) explains ArcGIS, Socrata, RSS, Atom, JSON, GeoJSON, coordinates, incident IDs, timestamps, and other terms.
 
         A submission is a lead. Project maintainers will independently verify sources before adding them to God's Eye View.
 
@@ -72,7 +73,7 @@ body:
 
         Leave this blank if you did not find one.
 
-        Need help? See [Finding the Actual Data Feed](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#finding-the-actual-data-feed).
+        Need help? See the Field Manual section on finding the actual data feed.
       placeholder: |
         Example:
         https://example.gov/arcgis/rest/services/ActiveIncidents/FeatureServer/0
@@ -83,10 +84,7 @@ body:
     id: format
     attributes:
       label: What kind of source does it appear to be?
-      description: |
-        Take your best guess. "I don't know" is completely fine.
-
-        The [Field Manual](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#finding-the-actual-data-feed) shows how to recognize common formats.
+      description: Take your best guess. "I don't know" is completely fine.
       options:
         - "I don't know"
         - "ArcGIS FeatureServer / MapServer"
@@ -103,14 +101,26 @@ body:
     id: coordinates
     attributes:
       label: Does the source appear to contain geographic coordinates?
-      description: |
-        Coordinates may look like `38.9176, -77.2290` or appear in fields named latitude, longitude, lat, lon, lng, coordinates, X, or Y.
-
-        Not sure? See [What Are Coordinates?](https://github.com/amishjim/gods-eye-view/blob/main/PUBLIC_INCIDENTS_FIELD_MANUAL.md#what-are-coordinates).
+      description: Coordinates may appear as latitude/longitude, lat/lon, coordinates, X/Y, or similar fields.
       options:
         - "Yes"
         - "No"
         - "I don't know"
+
+  - type: textarea
+    id: incident-types
+    attributes:
+      label: What kinds of incidents appear in the source?
+      description: Optional. Tell us what the source appears to cover.
+      placeholder: |
+        Examples:
+        Fire
+        EMS / medical
+        Police / law enforcement
+        Traffic crashes
+        Rescue
+        Hazmat
+        Other
 
   - type: textarea
     id: sample
@@ -130,6 +140,48 @@ body:
         call_time
         status
 
+  - type: dropdown
+    id: incident-id
+    attributes:
+      label: Does the source appear to provide a unique incident or call ID?
+      options:
+        - "Yes"
+        - "No"
+        - "I don't know"
+
+  - type: dropdown
+    id: timestamps
+    attributes:
+      label: Does the source provide incident dates or timestamps?
+      options:
+        - "Yes"
+        - "No"
+        - "I don't know"
+
+  - type: dropdown
+    id: status-field
+    attributes:
+      label: Does the source show incident status?
+      description: Examples might include active, dispatched, en route, cleared, closed, or similar.
+      options:
+        - "Yes"
+        - "No"
+        - "I don't know"
+
+  - type: input
+    id: update-frequency
+    attributes:
+      label: How often does the source appear to update?
+      description: Optional. An estimate is fine.
+      placeholder: "Example: About every 5 minutes / continuously / unknown"
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform or vendor
+      description: Optional. If you recognize the system or vendor powering the source, enter it here.
+      placeholder: "Example: ArcGIS, Socrata, PulsePoint, Unknown"
+
   - type: textarea
     id: access
     attributes:
@@ -141,15 +193,24 @@ body:
       placeholder: "Example: Publicly accessible with no login; terms unknown."
 
   - type: textarea
+    id: related-links
+    attributes:
+      label: Other useful official links
+      description: Optional. Add related official documentation, open-data pages, GIS portals, API documentation, or agency pages.
+      placeholder: |
+        https://...
+        https://...
+
+  - type: textarea
     id: notes
     attributes:
       label: Anything else you found?
       description: |
         Add anything that might help us investigate the source.
 
-        Useful information could include update frequency, platform/vendor name, an agency contact, another official link, something your AI research found, or simply what you observed while using the page.
+        Useful information could include unusual behavior, coverage limitations, agency contacts, another official link, something your AI research found, or simply what you observed while using the page.
 
-        If you used the Quick Scout or Full Research Prompt, you may paste useful results here.
+        If you used one of the project's AI research prompts, you may paste useful results here.
       placeholder: "Tell us anything else that may help."
 
   - type: checkboxes
