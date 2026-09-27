@@ -14,12 +14,17 @@ import { createLaunchSource } from '../layers/launches/source.js';
 import { createOverpassAlprSource } from '../layers/alpr/source.js';
 import { createFirmsSource } from '../layers/firms/source.js';
 import { createReferenceSources } from '../sources/reference.js';
+import { parsePublicIncidentXml } from './publicIncidentXml.js';
 export { createReferenceSources as createStandaloneReferenceSources } from '../sources/reference.js';
 
 /** Select standalone providers without starting their acquisition. */
 export function createStandaloneLayerSources() {
   return {
-    ...createReferenceSources(),
+    ...createReferenceSources({
+      publicIncidents: {
+        parseXml: parsePublicIncidentXml,
+      },
+    }),
     flights: createOpenSkySource(),
     military: createAdsbLolSource(),
     vessels: createAisStreamSource({

@@ -6,6 +6,7 @@ import {
   createSeattleFireIncidentSource,
   createPhoenixFireIncidentSource,
   createHoustonActiveIncidentSource,
+  createXmlPublicIncidentSource,
   createCombinedPublicIncidentSource,
 } from './source.js';
 
@@ -602,4 +603,61 @@ test('adapts Houston ArcGIS features into Public Incident records', async () => 
   assert.equal(incident.time, 1789782420000);
   assert.equal(incident.status, '');
   assert.equal(incident.source, 'Houston Emergency Center');
+});
+
+test('XML Public Incidents use an injected parser capability', async () => {
+  let parserInput = null;
+
+  const source = createXmlPublicIncidentSource(
+    'monroe-county-911',
+    {
+      fetchImpl: async () => ({
+        ok: true,
+        async text() {
+          return '<rss>fixture</rss>';
+        },
+      }),
+
+      parseXml(xmlText, provider) {
+        parserInput = {
+          xmlText,
+          providerId: provider.id,
+        };
+
+        return [{
+          stableId: 'monroe-county-911:fixture',
+        }];
+      },
+    },
+  );
+
+  const snapshot = await source.getSnapshot();
+
+  assert.deepEqual(parserInput, {
+    xmlText: '<rss>fixture</rss>',
+    providerId: 'monroe-county-911',
+  });
+
+  assert.deepEqual(snapshot, [{
+    stableId: 'monroe-county-911:fixture',
+  }]);
+});
+
+test('XML Public Incidents require an injected parser when acquired', async () => {
+  const source = createXmlPublicIncidentSource(
+    'monroe-county-911',
+    {
+      fetchImpl: async () => ({
+        ok: true,
+        async text() {
+          return '<rss>fixture</rss>';
+        },
+      }),
+    },
+  );
+
+  await assert.rejects(
+    () => source.getSnapshot(),
+    /requires an XML parser/,
+  );
 });

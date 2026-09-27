@@ -1,33 +1,36 @@
-import { preview } from 'vite';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-async function start() {
-  const host = process.env.HOST || '0.0.0.0';
-  const port = Number(process.env.PORT || 3000);
+import { startProductionServer } from './server/production/http-server.js';
 
-  const server = await preview({
-    configFile: './vite.config.js',
-    mode: 'production',
-    preview: {
-      host,
-      port,
-      strictPort: true,
-      allowedHosts: ['signalblotter.com', 'www.signalblotter.com'],
-    },
+const root = path.dirname(fileURLToPath(import.meta.url));
+const distDir = path.join(root, 'dist');
+
+const server = startProductionServer({
+  distDir,
+  commit: process.env.GEV_BUILD_COMMIT || 'unknown',
+  environment: process.env.NODE_ENV || 'production',
+  host: process.env.HOST || '0.0.0.0',
+  port: Number(process.env.PORT || 3000),
+});
+
+let shuttingDown = false;
+
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log(`${signal} received; shutting down.`);
+
+  server.closeAllConnections?.();
+
+  server.close((error) => {
+    if (error) {
+      console.error(error);
+      process.exitCode = 1;
+    }
   });
-
-  console.log(`God's Eye View production server listening on ${host}:${port}`);
-
-  const shutdown = async (signal) => {
-    console.log(`${signal} received; shutting down.`);
-    await server.close();
-    process.exit(0);
-  };
-
-  process.on('SIGTERM', () => void shutdown('SIGTERM'));
-  process.on('SIGINT', () => void shutdown('SIGINT'));
 }
 
-start().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT', () => void shutdown('SIGINT'));

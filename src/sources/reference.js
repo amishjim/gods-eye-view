@@ -7,13 +7,15 @@ import {
 import { PUBLIC_INCIDENT_PROVIDERS } from '../layers/publicIncidents/providers.js';
 
 /** Construct the existing reference feeds independently of application setup. */
-export function createReferenceSources() {
+export function createReferenceSources({
+  publicIncidents = {},
+} = {}) {
   return {
     earthquakes: createUsgsEarthquakeSource(),
     cables: createBundledCableSource(),
-      publicIncidents: createCombinedPublicIncidentSource(
+    publicIncidents: createCombinedPublicIncidentSource(
       PUBLIC_INCIDENT_PROVIDERS.map((provider) =>
-        createPublicIncidentSource(provider.id),
+        createPublicIncidentSource(provider.id, publicIncidents),
       ),
     ),
   };
