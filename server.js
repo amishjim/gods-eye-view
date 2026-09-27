@@ -1,25 +1,33 @@
-﻿import { preview } from 'vite';
+import { preview } from 'vite';
 
-const host = process.env.HOST || '0.0.0.0';
-const port = Number(process.env.PORT || 3000);
+async function start() {
+  const host = process.env.HOST || '0.0.0.0';
+  const port = Number(process.env.PORT || 3000);
 
-const server = await preview({
-  configFile: './vite.config.js',
-  mode: 'production',
-  preview: {
-    host,
-    port,
-    strictPort: true,
-  },
+  const server = await preview({
+    configFile: './vite.config.js',
+    mode: 'production',
+    preview: {
+      host,
+      port,
+      strictPort: true,
+      allowedHosts: ['signalblotter.com', 'www.signalblotter.com'],
+    },
+  });
+
+  console.log(`God's Eye View production server listening on ${host}:${port}`);
+
+  const shutdown = async (signal) => {
+    console.log(`${signal} received; shutting down.`);
+    await server.close();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+}
+
+start().catch((error) => {
+  console.error(error);
+  process.exit(1);
 });
-
-console.log(`God's Eye View production server listening on ${host}:${port}`);
-
-const shutdown = async (signal) => {
-  console.log(`${signal} received; shutting down.`);
-  await server.close();
-  process.exit(0);
-};
-
-process.on('SIGTERM', () => void shutdown('SIGTERM'));
-process.on('SIGINT', () => void shutdown('SIGINT'));
