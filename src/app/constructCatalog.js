@@ -24,6 +24,36 @@ import { localGeoJsonServices } from './localGeojsonServices.js';
 import { createBhoteKoshiEventLayer } from '../data/bhoteKoshiEvent.js';
 import { createBhoteKoshiLocatorLayer } from '../data/bhoteKoshiLocator.js';
 
+const SIGNAL_BLOTTER_HOSTS = new Set([
+  'signalblotter.com',
+  'www.signalblotter.com',
+]);
+
+const SIGNAL_BLOTTER_VISIBLE_LAYER_IDS = new Set([
+  'earthquakes',
+  'public-incidents',
+  'local-firms',
+]);
+
+export function applySignalBlotterLayerVisibility(
+  layers,
+  hostname = globalThis.location?.hostname,
+) {
+  if (!SIGNAL_BLOTTER_HOSTS.has(String(hostname || '').toLowerCase())) {
+    return layers;
+  }
+
+  for (const layer of layers) {
+    if (!layer?.id) continue;
+
+    if (!SIGNAL_BLOTTER_VISIBLE_LAYER_IDS.has(layer.id)) {
+      layer.showInTogglePanel = false;
+    }
+  }
+
+  return layers;
+}
+
 const SOURCE_METHODS = Object.freeze({
   flights: ['getSnapshot'],
   military: ['getSnapshot'],
@@ -105,7 +135,7 @@ export function createApplicationCatalog({
       source: sources.satellites,
     });
     const catalog = createLayerCatalog(
-      [
+      applySignalBlotterLayerVisibility([
         createBhoteKoshiEventLayer(),
         createBhoteKoshiLocatorLayer({
           boundaryResolver: nepalBoundaryResolver,
@@ -143,7 +173,7 @@ export function createApplicationCatalog({
           source: 'NASA FIRMS · LIVE',
           feed: sources.firms,
         }),
-      ],
+      ]),
       metadata,
     );
     return Object.freeze({ ...catalog, militaryRegistry, surface });
