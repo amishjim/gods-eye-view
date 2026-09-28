@@ -187,6 +187,7 @@ stage_file "server/production/middleware-stack.js"
 stage_file "server/production/real-build-smoke.mjs"
 
 stage_file "server/providers/public-incidents.js"
+stage_file "server/providers/firms.js"
 stage_file "server/providers/common/http.js"
 stage_file "server/providers/common/rate-limit.js"
 
@@ -196,6 +197,7 @@ stage_file "server/providers/regional/http.js"
 stage_file "server/standalone/api-not-found.js"
 
 stage_file "src/layers/publicIncidents/providers.js"
+stage_file "src/data/firmsCsv.js"
 stage_file "src/sources/httpBody.js"
 stage_file "src/sources/rateLimit.js"
 stage_file "src/data/regionalModel.js"

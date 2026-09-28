@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { createMiddlewareStack } from './middleware-stack.js';
 import { publicIncidentsProxy } from '../providers/public-incidents.js';
+import { firmsProxy } from '../providers/firms.js';
 import { geocodeProxy } from '../providers/regional/place.js';
 import { apiNotFoundPlugin } from '../standalone/api-not-found.js';
 
@@ -127,6 +128,7 @@ function productionPlugins() {
    */
   return [
     publicIncidentsProxy(),
+    firmsProxy(),
     geocodeProxy(),
     apiNotFoundPlugin(),
   ];
